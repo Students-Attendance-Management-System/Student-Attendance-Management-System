@@ -1,0 +1,35 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Dashboard | SAMS{% endblock %}
+{% block container_class %}wide{% endblock %}
+
+{% block content %}
+    <h1>Dashboard</h1>
+
+    <p>Welcome, <strong>{{ user.username }}</strong>!</p>
+
+    <p>
+        You have successfully logged in to the
+        Student Attendance Management System.
+    </p>
+
+    <hr>
+
+    <h2>Attendance Management</h2>
+
+    <p>
+        This is your SAMS dashboard. Attendance features can be
+        added here in later development tasks.
+    </p>
+
+    <ul>
+        <li>User authentication is enabled.</li>
+        <li>Your dashboard requires login.</li>
+        <li>You can log out securely.</li>
+    </ul>
+
+    <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit">Logout</button>
+    </form>
+{% endblock %}

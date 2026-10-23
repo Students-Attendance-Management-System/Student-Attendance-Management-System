@@ -1,0 +1,50 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Login | SAMS{% endblock %}
+
+{% block content %}
+    <h1>Welcome to SAMS</h1>
+    <p class="muted">Sign in to manage student attendance.</p>
+
+    {% if form.errors %}
+        <p class="messages">
+            Invalid username or password. Please try again.
+        </p>
+    {% endif %}
+
+    {% if next %}
+        <p class="muted">Please log in to access that page.</p>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <label for="id_username">Username</label>
+        <input
+            type="text"
+            name="username"
+            id="id_username"
+            autocomplete="username"
+            required
+            autofocus
+        >
+
+        <label for="id_password">Password</label>
+        <input
+            type="password"
+            name="password"
+            id="id_password"
+            autocomplete="current-password"
+            required
+        >
+
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <button type="submit">Login</button>
+    </form>
+
+    <p class="muted">
+        Don't have an account?
+        <a href="{% url 'register' %}">Create one</a>
+    </p>
+{% endblock %}
