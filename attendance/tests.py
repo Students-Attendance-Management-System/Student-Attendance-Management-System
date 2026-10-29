@@ -2,7 +2,8 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth.models import User
-
+from datetime import date
+from .models import Course, Section, AttendanceSession, AttendanceRecord
 
 class LoginTests(TestCase):
 
@@ -90,3 +91,59 @@ class CourseManagementTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             schedule.full_clean()
+
+
+class AttendanceSessionTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username="teacher",
+            password="TestPass123!",
+        )
+        self.student = User.objects.create_user(
+            username="student",
+            password="TestPass123!",
+        )
+        self.course = Course.objects.create(
+            code="CS201",
+            name="Database Systems",
+        )
+        self.section = Section.objects.create(
+            course=self.course,
+            name="B",
+            academic_year="2026-2027",
+        )
+        self.session = AttendanceSession.objects.create(
+            section=self.section,
+            date=date(2026, 10, 29),
+            teacher=self.teacher,
+            topic="Introduction to Databases",
+            details="First lecture",
+        )
+
+    def test_session_metadata_saved(self):
+        self.assertEqual(self.session.section, self.section)
+        self.assertEqual(self.session.date, date(2026, 10, 29))
+        self.assertEqual(self.session.teacher, self.teacher)
+        self.assertEqual(self.session.topic, "Introduction to Databases")
+
+    def test_attendance_record_linked_to_session(self):
+        record = AttendanceRecord.objects.create(
+            session=self.session,
+            student=self.student,
+            status="PRESENT",
+        )
+        self.assertEqual(record.session, self.session)
+        self.assertEqual(self.session.records.count(), 1)
+
+    def test_duplicate_attendance_record_rejected(self):
+        AttendanceRecord.objects.create(
+            session=self.session,
+            student=self.student,
+            status="PRESENT",
+        )
+        with self.assertRaises(Exception):
+            AttendanceRecord.objects.create(
+                session=self.session,
+                student=self.student,
+                status="ABSENT",
+            )
