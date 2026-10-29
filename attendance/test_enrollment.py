@@ -333,7 +333,9 @@ class EnrollmentViewTests(EnrollmentTestBase):
         )
 
         self.assertRedirects(response, self.roster_url(self.section))
-        self.assertEqual(Enrollment.objects.count(), 0)
+        enrollment.refresh_from_db()
+        self.assertEqual(enrollment.status, Enrollment.STATUS_REMOVED)
+        self.assertEqual(Enrollment.objects.count(), 1)
 
     def test_remove_requires_post(self):
         enrollment = Enrollment.objects.create(

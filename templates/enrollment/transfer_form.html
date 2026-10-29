@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Transfer student</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Transfer {{ enrollment.student.username }}</h2>
+    <p>Current section: {{ enrollment.section.course.code }} - {{ enrollment.section.name }} ({{ enrollment.section.academic_year }})</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Transfer</button>
+    </form>
+
+    <p><a href="{% url 'enrollment_section_roster' enrollment.section_id %}">Cancel</a></p>
+</body>
+</html>
