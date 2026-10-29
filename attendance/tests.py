@@ -31,3 +31,62 @@ class LoginTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Invalid username or password.")
+
+    
+from datetime import time
+from django.core.exceptions import ValidationError
+from django.test import TestCase
+from .models import Course, Section, Schedule
+
+
+class CourseManagementTests(TestCase):
+    def setUp(self):
+        self.course = Course.objects.create(
+            code="CS101",
+            name="Computer Science",
+        )
+        self.section = Section.objects.create(
+            course=self.course,
+            name="A",
+            academic_year="2026-2027",
+        )
+
+    def test_create_course(self):
+        self.assertEqual(self.course.name, "Computer Science")
+
+    def test_create_section(self):
+        self.assertEqual(self.section.course, self.course)
+
+    def test_duplicate_section_rejected(self):
+        with self.assertRaises(Exception):
+            Section.objects.create(
+                course=self.course,
+                name="A",
+                academic_year="2026-2027",
+            )
+
+    def test_schedule_end_time_must_be_after_start(self):
+        schedule = Schedule(
+            section=self.section,
+            day="MON",
+            start_time=time(11, 0),
+            end_time=time(10, 0),
+        )
+        with self.assertRaises(ValidationError):
+            schedule.full_clean()
+
+    def test_overlapping_schedule_rejected(self):
+        Schedule.objects.create(
+            section=self.section,
+            day="MON",
+            start_time=time(9, 0),
+            end_time=time(10, 0),
+        )
+        schedule = Schedule(
+            section=self.section,
+            day="MON",
+            start_time=time(9, 30),
+            end_time=time(10, 30),
+        )
+        with self.assertRaises(ValidationError):
+            schedule.full_clean()
