@@ -131,3 +131,8 @@ MAILERS = {
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/accounts/profile/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Session security (Issue #4)
+SESSION_COOKIE_AGE = 1800               # expire after 30 minutes of inactivity
+SESSION_SAVE_EVERY_REQUEST = True       # timer resets on every request
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # session ends when the browser closes
