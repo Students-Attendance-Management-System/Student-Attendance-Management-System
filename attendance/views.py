@@ -4,7 +4,8 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseForbidden
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
+from .models import TeacherAssignment
 
 
 def has_role(user, role):
@@ -61,7 +62,17 @@ def admin_dashboard(request):
 
 @role_required("Teacher")
 def teacher_dashboard(request):
-    return HttpResponse("Teacher Dashboard")
+    assignments = (
+        TeacherAssignment.objects.filter(teacher=request.user)
+        .select_related("section", "section__course")
+        .order_by("section__course__code", "section__name")
+    )
+
+    return render(
+        request,
+        "teacher_assignment/teacher_dashboard.html",
+        {"assignments": assignments},
+    )
 
 
 @role_required("Student")
