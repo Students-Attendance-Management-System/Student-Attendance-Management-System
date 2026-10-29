@@ -81,3 +81,48 @@ class Schedule(models.Model):
 
     def __str__(self):
         return f"{self.section} - {self.get_day_display()}"
+
+class Enrollment(models.Model):
+    student = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="enrollments",
+    )
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE,
+        related_name="enrollments",
+    )
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["student", "section"],
+                name="unique_student_section_enrollment",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+
+        if not self.student_id:
+            return
+
+        # Imported here so models.py keeps its simple imports at the top.
+        from .permissions import ROLE_STUDENT, get_role_name, is_managed_account
+
+        student = self.student
+
+        if not student.is_active:
+            raise ValidationError(
+                {"student": "Deactivated accounts cannot be enrolled."}
+            )
+
+        if not is_managed_account(student) or get_role_name(student) != ROLE_STUDENT:
+            raise ValidationError(
+                {"student": "Only users with the Student role can be enrolled."}
+            )
+
+    def __str__(self):
+        return f"{self.student.username} -> {self.section}"
