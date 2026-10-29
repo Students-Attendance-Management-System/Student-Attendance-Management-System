@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - {{ title }}</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>{{ title }}</h2>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">{% if is_create %}Create account{% else %}Save changes{% endif %}</button>
+        <a href="{% url 'user_list' %}">Cancel</a>
+    </form>
+</body>
+</html>

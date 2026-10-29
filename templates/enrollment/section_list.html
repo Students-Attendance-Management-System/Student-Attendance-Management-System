@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Sections</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Course Sections</h2>
+
+    {% if messages %}
+        <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if can_manage %}
+        <p><a href="{% url 'enroll_student' %}">Enroll a student</a></p>
+    {% endif %}
+
+    {% if sections %}
+        <table border="1" cellpadding="6" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Section</th>
+                    <th>Academic year</th>
+                    <th>Students enrolled</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for section in sections %}
+                    <tr>
+                        <td>{{ section.course.code }} - {{ section.course.name }}</td>
+                        <td>{{ section.name }}</td>
+                        <td>{{ section.academic_year }}</td>
+                        <td>{{ section.student_count }}</td>
+                        <td><a href="{% url 'enrollment_section_roster' section.pk %}">View roster</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No sections have been created yet.</p>
+    {% endif %}
+</body>
+</html>

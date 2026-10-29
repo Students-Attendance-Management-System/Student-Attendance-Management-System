@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Account Management</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Account Management</h2>
+
+    {% if messages %}
+        <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p><a href="{% url 'user_create' %}">Create account</a></p>
+
+    {% if users %}
+        <table border="1" cellpadding="6" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in users %}
+                    <tr>
+                        <td>{{ account.username }}</td>
+                        <td>{{ account.first_name }} {{ account.last_name }}</td>
+                        <td>{{ account.email }}</td>
+                        <td>{{ account.role_name }}</td>
+                        <td>{% if account.is_active %}Active{% else %}Deactivated{% endif %}</td>
+                        <td><a href="{% url 'user_update' account.pk %}">Edit</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No Teacher or Student accounts have been created yet.</p>
+    {% endif %}
+</body>
+</html>
