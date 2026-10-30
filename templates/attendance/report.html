@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Attendance report</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Attendance: {{ section.course.code }} - {{ section.name }} ({{ section.academic_year }})</h2>
+
+    {% if messages %}
+        <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p><a href="{% url 'attendance_section_list' %}">Back to sections</a></p>
+
+    <form method="get">
+        <label for="report_date">Date:</label>
+        <input type="date" id="report_date" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+        <button type="submit">Show</button>
+    </form>
+
+    {% if can_mark %}
+        <p><a href="{% url 'mark_attendance' section.pk %}?date={{ selected_date|date:'Y-m-d' }}">Mark or edit attendance for this date</a></p>
+    {% endif %}
+
+    {% if records %}
+        <table border="1" cellpadding="6" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Marked by</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                    <tr>
+                        <td>{{ record.student.username }}</td>
+                        <td>{{ record.student.first_name }} {{ record.student.last_name }}</td>
+                        <td>{{ record.get_status_display }}</td>
+                        <td>{{ record.marked_by.username }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No attendance has been recorded for {{ selected_date|date:"Y-m-d" }}.</p>
+    {% endif %}
+</body>
+</html>

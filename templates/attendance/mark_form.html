@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Mark attendance</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Mark attendance: {{ section.course.code }} - {{ section.name }} ({{ section.academic_year }})</h2>
+
+    {% if messages %}
+        <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p><a href="{% url 'attendance_section_list' %}">Back to sections</a></p>
+
+    <form method="get">
+        <label for="load_date">Load a saved date:</label>
+        <input type="date" id="load_date" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+        <button type="submit">Load</button>
+    </form>
+
+    <hr>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <ul>
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <p>
+            {{ form.date.label_tag }} {{ form.date }}
+            {{ form.date.errors }}
+        </p>
+
+        {% if form.enrollments %}
+            <table border="1" cellpadding="6" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Name</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment, field in form.student_rows %}
+                        <tr>
+                            <td>{{ enrollment.student.username }}</td>
+                            <td>{{ enrollment.student.first_name }} {{ enrollment.student.last_name }}</td>
+                            <td>
+                                {{ field }}
+                                {{ field.errors }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <p><button type="submit">Save attendance</button></p>
+        {% else %}
+            <p>No students are enrolled in this section yet.</p>
+        {% endif %}
+    </form>
+</body>
+</html>
