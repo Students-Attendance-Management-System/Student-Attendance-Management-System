@@ -1,15 +1,25 @@
 
+from datetime import date, time
+
+from django.contrib.auth.models import User, Group
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
-from django.contrib.auth.models import User, Group
+
+from .models import (
+    Course,
+    Section,
+    Schedule,
+    AttendanceSession,
+    AttendanceRecord,
+)
 
 
 class LoginTests(TestCase):
-
     def setUp(self):
         User.objects.create_user(
             username="testuser",
-            password="TestPass123!"
+            password="TestPass123!",
         )
 
     def test_login_page_loads(self):
@@ -37,14 +47,6 @@ class LoginTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Invalid username or password.")
-from datetime import time
-
-from django.contrib.auth.models import Group, User
-from django.core.exceptions import ValidationError
-from django.test import TestCase
-from django.urls import reverse
-
-from .models import Course, Section, Schedule
 
 
 class CourseManagementTests(TestCase):
@@ -98,6 +100,62 @@ class CourseManagementTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             schedule.full_clean()
+
+
+class AttendanceSessionTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username="teacher",
+            password="TestPass123!",
+        )
+        self.student = User.objects.create_user(
+            username="student",
+            password="TestPass123!",
+        )
+        self.course = Course.objects.create(
+            code="CS201",
+            name="Database Systems",
+        )
+        self.section = Section.objects.create(
+            course=self.course,
+            name="B",
+            academic_year="2026-2027",
+        )
+        self.session = AttendanceSession.objects.create(
+            section=self.section,
+            date=date(2026, 10, 29),
+            teacher=self.teacher,
+            topic="Introduction to Databases",
+            details="First lecture",
+        )
+
+    def test_session_metadata_saved(self):
+        self.assertEqual(self.session.section, self.section)
+        self.assertEqual(self.session.date, date(2026, 10, 29))
+        self.assertEqual(self.session.teacher, self.teacher)
+        self.assertEqual(self.session.topic, "Introduction to Databases")
+
+    def test_attendance_record_linked_to_session(self):
+        record = AttendanceRecord.objects.create(
+            session=self.session,
+            student=self.student,
+            status="PRESENT",
+        )
+        self.assertEqual(record.session, self.session)
+        self.assertEqual(self.session.records.count(), 1)
+
+    def test_duplicate_attendance_record_rejected(self):
+        AttendanceRecord.objects.create(
+            session=self.session,
+            student=self.student,
+            status="PRESENT",
+        )
+        with self.assertRaises(Exception):
+            AttendanceRecord.objects.create(
+                session=self.session,
+                student=self.student,
+                status="ABSENT",
+            )
 
 
 class RoleBasedAccessTests(TestCase):
