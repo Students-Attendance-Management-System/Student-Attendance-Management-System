@@ -126,3 +126,62 @@ class Enrollment(models.Model):
 
     def __str__(self):
         return f"{self.student.username} -> {self.section}"
+
+
+
+class Attendance(models.Model):
+    PRESENT = "P"
+    ABSENT = "A"
+    LATE = "L"
+    STATUS_CHOICES = [
+        (PRESENT, "Present"),
+        (ABSENT, "Absent"),
+        (LATE, "Late"),
+    ]
+
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE,
+        related_name="attendance_records",
+    )
+    student = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="attendance_records",
+    )
+    date = models.DateField()
+    status = models.CharField(max_length=1, choices=STATUS_CHOICES)
+    marked_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="attendance_marked",
+    )
+    marked_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["section", "student", "date"],
+                name="unique_attendance_per_student_section_date",
+            )
+        ]
+        ordering = ["-date", "student__username"]
+
+    def clean(self):
+        super().clean()
+
+        if self.section_id and self.student_id:
+            enrolled = Enrollment.objects.filter(
+                section_id=self.section_id,
+                student_id=self.student_id,
+            ).exists()
+
+            if not enrolled:
+                raise ValidationError(
+                    {"student": "This student is not enrolled in this section."}
+                )
+
+    def __str__(self):
+        return f"{self.student.username} - {self.section} - {self.date}: {self.get_status_display()}"

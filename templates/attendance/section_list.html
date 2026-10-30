@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Attendance</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Attendance - choose a section</h2>
+
+    {% if sections %}
+        <table border="1" cellpadding="6" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Section</th>
+                    <th>Academic year</th>
+                    <th>Students</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for section in sections %}
+                    <tr>
+                        <td>{{ section.course.code }} - {{ section.course.name }}</td>
+                        <td>{{ section.name }}</td>
+                        <td>{{ section.academic_year }}</td>
+                        <td>{{ section.student_count }}</td>
+                        <td>
+                            <a href="{% url 'attendance_report' section.pk %}">View attendance</a>
+                            {% if can_mark %}
+                                | <a href="{% url 'mark_attendance' section.pk %}">Mark attendance</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No sections have been created yet.</p>
+    {% endif %}
+</body>
+</html>
