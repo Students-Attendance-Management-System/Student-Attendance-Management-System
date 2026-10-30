@@ -1,0 +1,37 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+</head>
+<body>
+    <h1>{{ title }}</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <p>
+            {{ form.teacher.label_tag }}
+            {{ form.teacher }}
+            {{ form.teacher.errors }}
+        </p>
+
+        <p>
+            {{ form.section.label_tag }}
+            {{ form.section }}
+            {{ form.section.errors }}
+        </p>
+
+        <button type="submit">Save Assignment</button>
+    </form>
+
+    <p>
+        <a href="{% url 'teacher_assignment_list' %}">
+            Back to Teacher Assignments
+        </a>
+    </p>
+</body>
+</html>

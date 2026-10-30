@@ -167,14 +167,18 @@ class Enrollment(models.Model):
             )
         ]
 
+    
     def clean(self):
         super().clean()
 
         if not self.student_id:
             return
 
-        from .permissions import ROLE_STUDENT, get_role_name, is_managed_account
-
+        from .permissions import (
+            ROLE_STUDENT,
+            get_role_name,
+            is_managed_account,
+        )
         student = self.student
 
         if not student.is_active:
@@ -182,10 +186,62 @@ class Enrollment(models.Model):
                 {"student": "Deactivated accounts cannot be enrolled."}
             )
 
-        if not is_managed_account(student) or get_role_name(student) != ROLE_STUDENT:
+        if (
+            not is_managed_account(student)
+            or get_role_name(student) != ROLE_STUDENT
+        ):
             raise ValidationError(
                 {"student": "Only users with the Student role can be enrolled."}
             )
 
     def __str__(self):
         return f"{self.student.username} -> {self.section}"
+
+class TeacherAssignment(models.Model):
+    teacher = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="teacher_assignments",
+    )
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE,
+        related_name="teacher_assignments",
+    )
+    assigned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["teacher", "section"],
+                name="unique_teacher_section_assignment",
+            )
+        ]
+        ordering = ["section__course__code", "section__name"]
+
+    def clean(self):
+        super().clean()
+
+        if not self.teacher_id:
+            return
+
+        from .permissions import ROLE_TEACHER, get_role_name, is_managed_account
+
+        teacher = self.teacher
+
+        if not teacher.is_active:
+            raise ValidationError(
+                {"teacher": "Deactivated accounts cannot be assigned to sections."}
+            )
+
+        if (
+            not is_managed_account(teacher)
+            or get_role_name(teacher) != ROLE_TEACHER
+        ):
+            raise ValidationError(
+                {"teacher": "Only users with the Teacher role can be assigned."}
+            )
+
+    def __str__(self):
+        return f"{self.teacher.username} -> {self.section}"
+
