@@ -1,7 +1,6 @@
 from django.contrib import admin
+from .models import Course, Section, Schedule, AttendanceSession, AttendanceRecord
 
-# Register your models here.
-from .models import Course, Section, Schedule, AttendanceSession
 
 @admin.register(AttendanceSession)
 class AttendanceSessionAdmin(admin.ModelAdmin):
@@ -9,7 +8,6 @@ class AttendanceSessionAdmin(admin.ModelAdmin):
     list_filter = ("date", "section")
     search_fields = ("topic", "section__name", "teacher__username")
 
-from .models import Course, Section, Schedule, AttendanceSession, AttendanceRecord
 
 @admin.register(AttendanceRecord)
 class AttendanceRecordAdmin(admin.ModelAdmin):
