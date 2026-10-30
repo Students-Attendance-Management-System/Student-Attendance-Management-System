@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Roster</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Roster: {{ section.course.code }} - {{ section.name }} ({{ section.academic_year }})</h2>
+
+    {% if messages %}
+        <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p><a href="{% url 'enrollment_section_list' %}">Back to sections</a></p>
+
+    {% if can_manage %}
+        <p><a href="{% url 'enroll_student' %}?section={{ section.pk }}">Enroll a student in this section</a></p>
+    {% endif %}
+
+    {% if enrollments %}
+        <table border="1" cellpadding="6" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Enrolled on</th>
+                    {% if can_manage %}<th>Action</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for enrollment in enrollments %}
+                    <tr>
+                        <td>{{ enrollment.student.username }}</td>
+                        <td>{{ enrollment.student.first_name }} {{ enrollment.student.last_name }}</td>
+                        <td>{{ enrollment.student.email }}</td>
+                        <td>{{ enrollment.enrolled_at|date:"Y-m-d" }}</td>
+                        {% if can_manage %}
+                            <td>
+                                <form method="post" action="{% url 'unenroll_student' enrollment.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit">Remove</button>
+                                </form>
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No students are enrolled in this section yet.</p>
+    {% endif %}
+</body>
+</html>
