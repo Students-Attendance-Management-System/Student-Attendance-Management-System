@@ -8,15 +8,16 @@ from django.shortcuts import redirect, render
 from .models import TeacherAssignment
 
 
+
 def has_role(user, role):
-    """Check whether a user belongs to a particular role group."""
-    if not user.is_authenticated:
+    if not user.is_authenticated or not user.is_active:
         return False
 
     if role == "Admin" and user.is_superuser:
         return True
 
     return user.groups.filter(name=role).exists()
+
 
 
 def role_required(role):
