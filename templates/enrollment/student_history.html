@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Enrollment history</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Enrollment history: {{ student_obj.username }}</h2>
+    <p><a href="{% url 'enrollment_section_list' %}">Back to sections</a></p>
+
+    {% if enrollments %}
+        <table border="1" cellpadding="6" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Section</th>
+                    <th>Status</th>
+                    <th>Enrolled on</th>
+                    <th>Ended on</th>
+                    <th>Ended by</th>
+                    <th>Reason</th>
+                    <th>Transferred from</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in enrollments %}
+                    <tr>
+                        <td>{{ e.section.course.code }} - {{ e.section.name }} ({{ e.section.academic_year }})</td>
+                        <td>{{ e.get_status_display }}</td>
+                        <td>{{ e.enrolled_at|date:"Y-m-d" }}</td>
+                        <td>{{ e.ended_at|date:"Y-m-d"|default:"-" }}</td>
+                        <td>{{ e.ended_by.username|default:"-" }}</td>
+                        <td>{{ e.end_reason|default:"-" }}</td>
+                        <td>{% if e.transferred_from %}{{ e.transferred_from.section.course.code }} - {{ e.transferred_from.section.name }}{% else %}-{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No enrollment history.</p>
+    {% endif %}
+</body>
+</html>

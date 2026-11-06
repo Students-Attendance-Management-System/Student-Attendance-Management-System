@@ -16,4 +16,14 @@ urlpatterns = [
         enrollment_views.unenroll_student,
         name="unenroll_student",
     ),
+    path(
+        "<int:pk>/transfer/",
+        enrollment_views.transfer_enrollment,
+        name="transfer_enrollment",
+    ),
+    path(
+        "students/<int:user_id>/history/",
+        enrollment_views.student_history,
+        name="enrollment_student_history",
+    ),
 ]

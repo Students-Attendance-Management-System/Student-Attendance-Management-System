@@ -2,14 +2,16 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .account_views import admin_only
-from .enrollment_forms import EnrollmentForm
+from .enrollment_forms import EnrollmentForm, TransferForm
+from .enrollment_services import remove_student, transfer_student
 from .models import Enrollment, Section
 from .permissions import ROLE_TEACHER, get_role_name, is_sams_admin
 
@@ -39,7 +41,12 @@ def roster_viewer(view_func):
 def section_list(request):
     sections = (
         Section.objects.select_related("course")
-        .annotate(student_count=Count("enrollments"))
+        .annotate(
+            student_count=Count(
+                "enrollments",
+                filter=Q(enrollments__status=Enrollment.STATUS_ACTIVE),
+            )
+        )
         .order_by("course__code", "academic_year", "name")
     )
 
@@ -58,8 +65,11 @@ def section_roster(request, pk):
     section = get_object_or_404(
         Section.objects.select_related("course"), pk=pk
     )
-    enrollments = section.enrollments.select_related("student").order_by(
-        "student__username"
+    # Current roster = active enrollments only.
+    enrollments = (
+        section.enrollments.filter(status=Enrollment.STATUS_ACTIVE)
+        .select_related("student")
+        .order_by("student__username")
     )
 
     return render(
@@ -70,6 +80,22 @@ def section_roster(request, pk):
             "enrollments": enrollments,
             "can_manage": is_sams_admin(request.user),
         },
+    )
+
+
+@roster_viewer
+def student_history(request, user_id):
+    student = get_object_or_404(User, pk=user_id)
+    enrollments = (
+        Enrollment.objects.filter(student=student)
+        .select_related("section__course", "ended_by", "transferred_from__section")
+        .order_by("-enrolled_at", "-pk")
+    )
+
+    return render(
+        request,
+        "enrollment/student_history.html",
+        {"student_obj": student, "enrollments": enrollments},
     )
 
 
@@ -114,8 +140,59 @@ def unenroll_student(request, pk):
         pk=pk,
     )
     section_id = enrollment.section_id
-    username = enrollment.student.username
-    enrollment.delete()
 
-    messages.success(request, f"{username} was removed from the roster.")
+    try:
+        remove_student(
+            enrollment, request.user, request.POST.get("reason", "")
+        )
+    except ValidationError as error:
+        messages.error(request, " ".join(error.messages))
+    else:
+        messages.success(
+            request,
+            f"{enrollment.student.username} was removed from the roster. "
+            "Their history is kept.",
+        )
+
     return redirect("enrollment_section_roster", pk=section_id)
+
+
+@admin_only
+def transfer_enrollment(request, pk):
+    enrollment = get_object_or_404(
+        Enrollment.objects.select_related("student", "section__course"),
+        pk=pk,
+    )
+
+    if enrollment.status != Enrollment.STATUS_ACTIVE:
+        messages.error(request, "Only active enrollments can be transferred.")
+        return redirect("enrollment_section_roster", pk=enrollment.section_id)
+
+    if request.method == "POST":
+        form = TransferForm(request.POST, enrollment=enrollment)
+
+        if form.is_valid():
+            try:
+                new = transfer_student(
+                    enrollment,
+                    form.cleaned_data["section"],
+                    request.user,
+                    form.cleaned_data["reason"],
+                )
+            except ValidationError as error:
+                form.add_error(None, error)
+            else:
+                messages.success(
+                    request,
+                    f"{enrollment.student.username} was transferred to "
+                    f"{new.section}.",
+                )
+                return redirect("enrollment_section_roster", pk=new.section_id)
+    else:
+        form = TransferForm(enrollment=enrollment)
+
+    return render(
+        request,
+        "enrollment/transfer_form.html",
+        {"form": form, "enrollment": enrollment},
+    )

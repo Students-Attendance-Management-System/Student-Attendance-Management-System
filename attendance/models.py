@@ -147,6 +147,15 @@ class AttendanceRecord(models.Model):
 
 
 class Enrollment(models.Model):
+    STATUS_ACTIVE = "ACTIVE"
+    STATUS_TRANSFERRED = "TRANSFERRED"
+    STATUS_REMOVED = "REMOVED"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_TRANSFERRED, "Transferred"),
+        (STATUS_REMOVED, "Removed"),
+    ]
+
     student = models.ForeignKey(
         "auth.User",
         on_delete=models.CASCADE,
@@ -158,12 +167,32 @@ class Enrollment(models.Model):
         related_name="enrollments",
     )
     enrolled_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=12, choices=STATUS_CHOICES, default=STATUS_ACTIVE
+    )
+    ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ended_enrollments",
+    )
+    end_reason = models.CharField(max_length=255, blank=True)
+    transferred_from = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transfers_to",
+    )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=["student", "section"],
-                name="unique_student_section_enrollment",
+                condition=models.Q(status="ACTIVE"),
+                name="unique_active_student_section_enrollment",
             )
         ]
 
@@ -171,7 +200,8 @@ class Enrollment(models.Model):
     def clean(self):
         super().clean()
 
-        if not self.student_id:
+        # History rows (transferred/removed) are never re-validated.
+        if self.status != self.STATUS_ACTIVE or not self.student_id:
             return
 
         from .permissions import (
@@ -195,8 +225,8 @@ class Enrollment(models.Model):
             )
 
     def __str__(self):
-        return f"{self.student.username} -> {self.section}"
-
+        return f"{self.student.username} -> {self.section} ({self.status})"
+  
 class TeacherAssignment(models.Model):
     teacher = models.ForeignKey(
         "auth.User",

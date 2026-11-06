@@ -45,7 +45,9 @@ class EnrollmentForm(forms.Form):
 
         if student and section:
             if Enrollment.objects.filter(
-                student=student, section=section
+                student=student,
+                section=section,
+                status=Enrollment.STATUS_ACTIVE,
             ).exists():
                 raise forms.ValidationError(
                     "This student is already enrolled in this section."
@@ -63,3 +65,26 @@ class EnrollmentForm(forms.Form):
         enrollment.full_clean()
         enrollment.save()
         return enrollment
+
+class TransferForm(forms.Form):
+    section = forms.ModelChoiceField(
+        queryset=Section.objects.none(), label="Move to section"
+    )
+    reason = forms.CharField(max_length=255, required=False)
+
+    def __init__(self, *args, enrollment, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Only other sections of the same course are valid targets.
+        self.fields["section"].queryset = (
+            Section.objects.select_related("course")
+            .filter(course_id=enrollment.section.course_id)
+            .exclude(pk=enrollment.section_id)
+            .order_by("academic_year", "name")
+        )
+        self.fields["section"].label_from_instance = (
+            lambda section: (
+                f"{section.course.code} - {section.name} "
+                f"({section.academic_year})"
+            )
+        )
