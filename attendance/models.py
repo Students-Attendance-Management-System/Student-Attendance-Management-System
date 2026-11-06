@@ -1,6 +1,7 @@
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.conf import settings
 
 
 class Course(models.Model):
@@ -82,6 +83,69 @@ class Schedule(models.Model):
     def __str__(self):
         return f"{self.section} - {self.get_day_display()}"
 
+
+class AttendanceSession(models.Model):
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE,
+        related_name="attendance_sessions",
+    )
+    date = models.DateField()
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="conducted_sessions",
+    )
+    topic = models.CharField(max_length=200, blank=True)
+    details = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date", "section"]
+
+    def __str__(self):
+        return f"{self.section} - {self.date}"
+
+
+class AttendanceRecord(models.Model):
+    STATUS_CHOICES = [
+        ("PRESENT", "Present"),
+        ("ABSENT", "Absent"),
+        ("LATE", "Late"),
+    ]
+
+    session = models.ForeignKey(
+        AttendanceSession,
+        on_delete=models.CASCADE,
+        related_name="records",
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="attendance_records",
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default="PRESENT",
+    )
+    remarks = models.CharField(max_length=200, blank=True)
+    marked_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "student"],
+                name="unique_student_attendance_per_session",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.student} - {self.session} - {self.status}"
+
+
 class Enrollment(models.Model):
     STATUS_ACTIVE = "ACTIVE"
     STATUS_TRANSFERRED = "TRANSFERRED"
@@ -132,6 +196,7 @@ class Enrollment(models.Model):
             )
         ]
 
+    
     def clean(self):
         super().clean()
 
@@ -139,9 +204,11 @@ class Enrollment(models.Model):
         if self.status != self.STATUS_ACTIVE or not self.student_id:
             return
 
-        # Imported here so models.py keeps its simple imports at the top.
-        from .permissions import ROLE_STUDENT, get_role_name, is_managed_account
-
+        from .permissions import (
+            ROLE_STUDENT,
+            get_role_name,
+            is_managed_account,
+        )
         student = self.student
 
         if not student.is_active:
@@ -149,10 +216,62 @@ class Enrollment(models.Model):
                 {"student": "Deactivated accounts cannot be enrolled."}
             )
 
-        if not is_managed_account(student) or get_role_name(student) != ROLE_STUDENT:
+        if (
+            not is_managed_account(student)
+            or get_role_name(student) != ROLE_STUDENT
+        ):
             raise ValidationError(
                 {"student": "Only users with the Student role can be enrolled."}
             )
 
     def __str__(self):
         return f"{self.student.username} -> {self.section} ({self.status})"
+  
+class TeacherAssignment(models.Model):
+    teacher = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="teacher_assignments",
+    )
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE,
+        related_name="teacher_assignments",
+    )
+    assigned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["teacher", "section"],
+                name="unique_teacher_section_assignment",
+            )
+        ]
+        ordering = ["section__course__code", "section__name"]
+
+    def clean(self):
+        super().clean()
+
+        if not self.teacher_id:
+            return
+
+        from .permissions import ROLE_TEACHER, get_role_name, is_managed_account
+
+        teacher = self.teacher
+
+        if not teacher.is_active:
+            raise ValidationError(
+                {"teacher": "Deactivated accounts cannot be assigned to sections."}
+            )
+
+        if (
+            not is_managed_account(teacher)
+            or get_role_name(teacher) != ROLE_TEACHER
+        ):
+            raise ValidationError(
+                {"teacher": "Only users with the Teacher role can be assigned."}
+            )
+
+    def __str__(self):
+        return f"{self.teacher.username} -> {self.section}"
+
