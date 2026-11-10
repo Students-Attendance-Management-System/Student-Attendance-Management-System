@@ -1,11 +1,21 @@
 
 from django.urls import path
 
-from . import views
+from . import correction_views, views
 
 app_name = "attendance"
 
 urlpatterns = [
+    path(
+        "sessions/<int:session_id>/records/",
+        correction_views.session_records,
+        name="session_records",
+    ),
+    path(
+        "records/<int:record_id>/correct/",
+        correction_views.correct_record,
+        name="correct_record",
+    ),
     path("dashboard/", views.dashboard, name="dashboard"),
     path(
         "dashboard/admin/",

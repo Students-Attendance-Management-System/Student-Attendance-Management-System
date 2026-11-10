@@ -1,0 +1,29 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Session attendance</title>
+</head>
+<body>
+  <h1>{{ session.section }} - {{ session.date }}</h1>
+
+  {% if window_open %}
+    <p>Corrections are allowed until {{ deadline }}.</p>
+  {% else %}
+    <p>The correction window closed on {{ deadline }}.</p>
+  {% endif %}
+
+  <table border="1" cellpadding="4">
+    <tr><th>Student</th><th>Status</th><th></th></tr>
+    {% for r in records %}
+    <tr>
+      <td>{{ r.student.username }}</td>
+      <td>{{ r.get_status_display }}</td>
+      <td><a href="{% url 'attendance:correct_record' r.pk %}">{% if window_open %}Correct{% else %}View history{% endif %}</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">No attendance records for this session.</td></tr>
+    {% endfor %}
+  </table>
+</body>
+</html>
