@@ -131,3 +131,6 @@ MAILERS = {
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/accounts/profile/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+# Hours after the end of a session's date during which attendance
+# may still be corrected. Change here only.
+ATTENDANCE_CORRECTION_WINDOW_HOURS = 24

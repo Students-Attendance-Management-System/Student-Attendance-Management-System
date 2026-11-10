@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Correct attendance</title>
+</head>
+<body>
+  <h1>Correct attendance</h1>
+
+  {% for message in messages %}
+    <p><strong>{{ message }}</strong></p>
+  {% endfor %}
+
+  <p>
+    Student: {{ record.student.username }}<br>
+    Section: {{ record.session.section }}<br>
+    Date: {{ record.session.date }}<br>
+    Current status: <strong>{{ record.get_status_display }}</strong>
+  </p>
+
+  {% if window_open %}
+    <p>Corrections are allowed until {{ deadline }}.</p>
+  {% else %}
+    <p><strong>The correction window closed on {{ deadline }}. This record can no longer be changed.</strong></p>
+  {% endif %}
+
+  {% if window_open %}
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <p>{{ form.new_status.label_tag }} {{ form.new_status }} {{ form.new_status.errors }}</p>
+    <p>{{ form.reason.label_tag }} {{ form.reason }} {{ form.reason.errors }}</p>
+    <button type="submit">Save correction</button>
+  </form>
+  {% endif %}
+
+  <h2>Correction history</h2>
+  {% if corrections %}
+    <table border="1" cellpadding="4">
+      <tr><th>When</th><th>By</th><th>Old</th><th>New</th><th>Reason</th></tr>
+      {% for c in corrections %}
+      <tr>
+        <td>{{ c.corrected_at }}</td>
+        <td>{{ c.corrected_by.username|default:"(removed user)" }}</td>
+        <td>{{ c.old_status }}</td>
+        <td>{{ c.new_status }}</td>
+        <td>{{ c.reason }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No corrections yet.</p>
+  {% endif %}
+
+  <p><a href="{% url 'attendance:session_records' record.session.pk %}">Back to session</a></p>
+</body>
+</html>

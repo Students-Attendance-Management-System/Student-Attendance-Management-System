@@ -146,6 +146,33 @@ class AttendanceRecord(models.Model):
         return f"{self.student} - {self.session} - {self.status}"
 
 
+class AttendanceCorrection(models.Model):
+    record = models.ForeignKey(
+        AttendanceRecord,
+        on_delete=models.CASCADE,
+        related_name="corrections",
+    )
+    old_status = models.CharField(
+        max_length=10, choices=AttendanceRecord.STATUS_CHOICES
+    )
+    new_status = models.CharField(
+        max_length=10, choices=AttendanceRecord.STATUS_CHOICES
+    )
+    corrected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="attendance_corrections",
+    )
+    corrected_at = models.DateTimeField(auto_now_add=True)
+    reason = models.CharField(max_length=255)
+
+    class Meta:
+        ordering = ["-corrected_at"]
+
+    def __str__(self):
+        return f"{self.record}: {self.old_status} -> {self.new_status}"
+
 class Enrollment(models.Model):
     STATUS_ACTIVE = "ACTIVE"
     STATUS_TRANSFERRED = "TRANSFERRED"
