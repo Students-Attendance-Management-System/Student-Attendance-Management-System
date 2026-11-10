@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mark Attendance</title>
+</head>
+<body>
+    <h1>Mark Attendance</h1>
+
+    <h3>{{ session.section }}</h3>
+    <p>Date: {{ session.date }}</p>
+    <p>Topic: {{ session.topic }}</p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <table border="1" cellpadding="8">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Attendance Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for row in student_rows %}
+                    <tr>
+                        <td>{{ row.student.username }}</td>
+                        <td>
+                            {% if row.record %}
+                                {{ row.record.get_status_display }}
+                                (Already marked)
+                            {% else %}
+                                <select name="status_{{ row.student.id }}" required>
+                                    <option value="">Select status</option>
+                                    <option value="PRESENT">Present</option>
+                                    <option value="ABSENT">Absent</option>
+                                    <option value="LATE">Late</option>
+                                </select>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2">No active students enrolled.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <br>
+        <button type="submit">Submit Attendance</button>
+    </form>
+</body>
+</html>
