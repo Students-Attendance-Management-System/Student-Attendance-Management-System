@@ -223,7 +223,7 @@ class Enrollment(models.Model):
             )
         ]
 
-    
+
     def clean(self):
         super().clean()
 
@@ -253,7 +253,7 @@ class Enrollment(models.Model):
 
     def __str__(self):
         return f"{self.student.username} -> {self.section} ({self.status})"
-  
+
 class TeacherAssignment(models.Model):
     teacher = models.ForeignKey(
         "auth.User",
@@ -301,4 +301,60 @@ class TeacherAssignment(models.Model):
 
     def __str__(self):
         return f"{self.teacher.username} -> {self.section}"
+
+
+class AttendanceThreshold(models.Model):
+    """
+    Single-row setting. Students whose attendance percentage is below
+    this value are shown on the defaulter list.
+    """
+
+    DEFAULT_VALUE = 75
+
+    value = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=DEFAULT_VALUE,
+        help_text="Attendance percentage between 0 and 100.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+
+    def clean(self):
+        super().clean()
+
+        try:
+            out_of_range = not (0 <= self.value <= 100)
+        except TypeError:
+            # Field-level validation already reports values that are not numbers.
+            return
+
+        if out_of_range:
+            raise ValidationError(
+                {"value": "Threshold must be between 0 and 100."}
+            )
+
+    def save(self, *args, **kwargs):
+        # There is only ever one row, and it can never hold a bad value.
+        self.pk = 1
+        self.full_clean(validate_unique=False)
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_solo(cls):
+        """Return the one threshold row, creating it with the default."""
+        threshold, _ = cls.objects.get_or_create(
+            pk=1,
+            defaults={"value": cls.DEFAULT_VALUE},
+        )
+        return threshold
+
+    def __str__(self):
+        return f"Defaulter threshold: {self.value}%"
 

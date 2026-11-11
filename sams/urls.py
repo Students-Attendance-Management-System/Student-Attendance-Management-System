@@ -12,4 +12,5 @@ urlpatterns = [
         include('attendance.teacher_assignment_urls'),
     ),
     path('', include('attendance.urls')),
+    path('defaulters/', include('attendance.defaulter_urls')),
 ]

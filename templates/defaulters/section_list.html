@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Defaulter Lists</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Defaulter Lists</h2>
+
+    {% if messages %}
+        <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p>
+        Current threshold: <strong>{{ threshold }}%</strong>.
+        Students below this attendance are listed as defaulters.
+    </p>
+
+    {% if can_manage %}
+        <p><a href="{% url 'defaulter_settings' %}">Change threshold</a></p>
+    {% endif %}
+
+    {% if sections %}
+        <table border="1" cellpadding="6" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Section</th>
+                    <th>Academic year</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for section in sections %}
+                    <tr>
+                        <td>{{ section.course.code }} - {{ section.course.name }}</td>
+                        <td>{{ section.name }}</td>
+                        <td>{{ section.academic_year }}</td>
+                        <td><a href="{% url 'defaulter_list' section.pk %}">View defaulters</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No sections are available to you.</p>
+    {% endif %}
+</body>
+</html>
