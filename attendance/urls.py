@@ -1,5 +1,5 @@
 from django.urls import path
-from . import attendance_views, correction_views, views
+from . import attendance_views, correction_views, report_views, views
 
 app_name = "attendance"
 
@@ -19,6 +19,8 @@ urlpatterns = [
         correction_views.correct_record,
         name="correct_record",
     ),
+    path("reports/", report_views.report_form, name="report_form"),
+    path("reports/export/", report_views.export_report, name="export_report"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("dashboard/admin/", views.admin_dashboard, name="admin_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
