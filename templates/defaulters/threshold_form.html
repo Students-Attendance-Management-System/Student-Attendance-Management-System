@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Attendance Threshold</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Attendance Threshold</h2>
+
+    <p>Enter an attendance threshold between 0 and 100.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Save</button>
+    </form>
+
+    <p>
+        <a href="{% url 'defaulter_section_list' %}">
+            Back to defaulter lists
+        </a>
+    </p>
+</body>
+</html>

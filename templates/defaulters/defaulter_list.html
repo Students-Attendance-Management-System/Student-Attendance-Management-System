@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Defaulters</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Defaulters: {{ section.course.code }} - {{ section.name }}</h2>
+
+    <p><a href="{% url 'defaulter_section_list' %}">Back to sections</a></p>
+
+    <p>
+        Threshold: {{ report.threshold }}%.
+        Enrolled students: {{ report.enrolled_count }}.
+        {% if can_manage %}
+            <a href="{% url 'defaulter_settings' %}">Change threshold</a>
+        {% endif %}
+    </p>
+
+    {% if report.defaulters %}
+    <table border="1" cellpadding="6">
+        <tr>
+            <th>User ID</th>
+            <th>Name</th>
+            <th>Present</th>
+            <th>Late</th>
+            <th>Absent</th>
+            <th>Attended / Total</th>
+            <th>Attendance %</th>
+        </tr>
+        {% for row in report.defaulters %}
+        <tr>
+            <td>{{ row.student.username }}</td>
+            <td>{{ row.student.first_name }} {{ row.student.last_name }}</td>
+            <td>{{ row.present }}</td>
+            <td>{{ row.late }}</td>
+            <td>{{ row.absent }}</td>
+            <td>{{ row.attended }} / {{ row.total }}</td>
+            <td>{{ row.percentage }}%</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <p>No students are below the threshold.</p>
+    {% endif %}
+
+    {% if report.no_records_count %}
+        <p>{{ report.no_records_count }} students have no attendance records yet.</p>
+    {% endif %}
+</body>
+</html>
