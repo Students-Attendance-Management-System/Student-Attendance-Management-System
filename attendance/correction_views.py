@@ -2,6 +2,7 @@
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from .alert_services import refresh_section_alerts
 
 from .correction_forms import CorrectionForm
 from .correction_services import (
@@ -37,6 +38,8 @@ def correct_record(request, record_id):
                 request.user,
                 form.cleaned_data["reason"],
             )
+            refresh_section_alerts(record.session.section)
+            
         except ValidationError as exc:
             form.add_error(None, exc)
         else:

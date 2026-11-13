@@ -58,7 +58,7 @@ def dashboard(request):
 
 @role_required("Admin")
 def admin_dashboard(request):
-    return HttpResponse("Admin Dashboard")
+    return render(request, "admin_dashboard.html")
 
 
 @role_required("Teacher")
@@ -78,4 +78,4 @@ def teacher_dashboard(request):
 
 @role_required("Student")
 def student_dashboard(request):
-    return HttpResponse("Student Dashboard")
+    return render(request, "student_dashboard.html")
