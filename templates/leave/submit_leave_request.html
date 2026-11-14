@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Submit Leave Request - SAMS</title>
+</head>
+<body>
+    <h1>Submit Leave Request</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">Submit Request</button>
+    </form>
+
+    <p>
+        <a href="{% url 'attendance:my_leave_requests' %}">
+            View My Leave Requests
+        </a>
+    </p>
+
+    <p>
+        <a href="{% url 'attendance:student_dashboard' %}">
+            Back to Dashboard
+        </a>
+    </p>
+</body>
+</html>
