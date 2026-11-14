@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect, render
+from .alert_services import refresh_section_alerts
 
 from .attendance_services import (
     get_markable_session,
@@ -48,6 +49,7 @@ def mark_attendance(request, session_id):
                 session_id,
                 attendance_data,
             )
+            refresh_section_alerts(session.section)
 
             messages.success(
                 request,

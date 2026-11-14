@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
-
+from .alert_services import refresh_section_alerts
 from .account_views import admin_only
 from .defaulter_forms import ThresholdForm
 from .defaulter_services import get_defaulter_report, sections_for_user
@@ -53,6 +53,10 @@ def threshold_settings(request):
 
         if form.is_valid():
             threshold = form.save(request.user)
+
+            for section in Section.objects.all():
+                refresh_section_alerts(section)
+                
             messages.success(
                 request,
                 f"Threshold updated to {threshold.value}%.",

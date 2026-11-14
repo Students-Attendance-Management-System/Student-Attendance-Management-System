@@ -358,3 +358,41 @@ class AttendanceThreshold(models.Model):
     def __str__(self):
         return f"Defaulter threshold: {self.value}%"
 
+
+class AttendanceAlert(models.Model):
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="attendance_alerts",
+    )
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE,
+        related_name="attendance_alerts",
+    )
+    attendance_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+    )
+    threshold = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["student", "section"],
+                name="unique_student_section_alert",
+            )
+        ]
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        return (
+            f"Low attendance alert: "
+            f"{self.student.username} - {self.section}"
+        )

@@ -1,9 +1,14 @@
 from django.urls import path
-from . import attendance_views, correction_views, report_views, views
+from . import alert_views, attendance_views, correction_views, report_views, views
 
 app_name = "attendance"
 
 urlpatterns = [
+    path(
+        "alerts/",
+        alert_views.alert_list,
+        name="alert_list"
+    ),
     path(
         "sessions/<int:session_id>/mark/",
         attendance_views.mark_attendance,
