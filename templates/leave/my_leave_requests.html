@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Leave Requests - SAMS</title>
+</head>
+<body>
+    <h1>My Leave Requests</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <p>
+        <a href="{% url 'attendance:submit_leave_request' %}">
+            Submit New Leave Request
+        </a>
+    </p>
+
+    {% if leave_requests %}
+        <table border="1" cellpadding="8">
+            <thead>
+                <tr>
+                    <th>Section</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Reviewed By</th>
+                    <th>Reviewed At</th>
+                    <th>Submitted At</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for request in leave_requests %}
+                    <tr>
+                        <td>{{ request.section }}</td>
+                        <td>{{ request.start_date }}</td>
+                        <td>{{ request.end_date }}</td>
+                        <td>{{ request.reason }}</td>
+                        <td>{{ request.get_status_display }}</td>
+                        <td>
+                            {% if request.reviewed_by %}
+                                {{ request.reviewed_by.username }}
+                            {% else %}
+                                Not reviewed
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ request.reviewed_at|default:"-" }}
+                        </td>
+                        <td>{{ request.created_at }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>You have not submitted any leave requests yet.</p>
+    {% endif %}
+
+    <p>
+        <a href="{% url 'attendance:student_dashboard' %}">
+            Back to Dashboard
+        </a>
+    </p>
+</body>
+</html>
