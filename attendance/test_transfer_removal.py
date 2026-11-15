@@ -315,6 +315,13 @@ class TransferRemovalViewTests(EnrollmentTestBase):
         self.assertEqual(counts, {"A": 0, "B": 1})
 
     def test_history_page_shows_all_rows_to_teacher_but_not_student(self):
+        from .models import TeacherAssignment
+
+        for section in (self.section, self.other_section):
+            TeacherAssignment.objects.create(
+                teacher=self.teacher, section=section
+            )
+
         transfer_student(self.enrollment, self.other_section, self.admin)
         url = reverse("enrollment_student_history", args=[self.student.pk])
 

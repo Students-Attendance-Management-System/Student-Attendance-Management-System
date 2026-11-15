@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .account_views import admin_only
+from .defaulter_services import sections_for_user
 from .enrollment_forms import EnrollmentForm, TransferForm
 from .enrollment_services import remove_student, transfer_student
 from .models import Enrollment, Section
@@ -40,7 +41,10 @@ def roster_viewer(view_func):
 @roster_viewer
 def section_list(request):
     sections = (
-        Section.objects.select_related("course")
+        Section.objects.filter(
+            pk__in=sections_for_user(request.user).values("pk")
+        )
+        .select_related("course")
         .annotate(
             student_count=Count(
                 "enrollments",
@@ -65,6 +69,9 @@ def section_roster(request, pk):
     section = get_object_or_404(
         Section.objects.select_related("course"), pk=pk
     )
+    if not sections_for_user(request.user).filter(pk=section.pk).exists():
+        raise PermissionDenied
+
     # Current roster = active enrollments only.
     enrollments = (
         section.enrollments.filter(status=Enrollment.STATUS_ACTIVE)
@@ -91,6 +98,15 @@ def student_history(request, user_id):
         .select_related("section__course", "ended_by", "transferred_from__section")
         .order_by("-enrolled_at", "-pk")
     )
+
+    if not is_sams_admin(request.user):
+        # Teachers only see enrollments in their own sections.
+        enrollments = enrollments.filter(
+            section__in=sections_for_user(request.user).values("pk")
+        )
+
+        if not enrollments.exists():
+            raise PermissionDenied
 
     return render(
         request,

@@ -200,6 +200,11 @@ class EnrollmentViewTests(EnrollmentTestBase):
             self.assertEqual(self.client.get(url).status_code, 403)
 
     def test_teacher_can_view_sections_and_rosters(self):
+        from .models import TeacherAssignment
+
+        TeacherAssignment.objects.create(
+            teacher=self.teacher, section=self.section
+        )
         self.client.force_login(self.teacher)
 
         response = self.client.get(reverse("enrollment_section_list"))

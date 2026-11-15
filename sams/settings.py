@@ -129,7 +129,11 @@ MAILERS = {
 }
 
 LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/accounts/profile/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+
+# SRS SAMS-SR-005: sessions expire after 30 minutes of inactivity.
+SESSION_COOKIE_AGE = 30 * 60
+SESSION_SAVE_EVERY_REQUEST = True
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 # Hours after the end of a session's date during which attendance
 # may still be corrected. Change here only.

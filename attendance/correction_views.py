@@ -1,4 +1,4 @@
-﻿from django.contrib import messages
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
@@ -60,7 +60,7 @@ def correct_record(request, record_id):
 
 
 from .models import AttendanceSession, TeacherAssignment
-from .permissions import is_sams_admin
+from .permissions import ROLE_TEACHER, get_role_name, is_sams_admin
 
 
 @login_required
@@ -70,9 +70,12 @@ def session_records(request, session_id):
         pk=session_id,
     )
 
-    allowed = is_sams_admin(request.user) or TeacherAssignment.objects.filter(
-        teacher=request.user, section=session.section
-    ).exists()
+    allowed = is_sams_admin(request.user) or (
+        get_role_name(request.user) == ROLE_TEACHER
+        and TeacherAssignment.objects.filter(
+            teacher=request.user, section=session.section
+        ).exists()
+    )
     if not allowed:
         raise PermissionDenied
 

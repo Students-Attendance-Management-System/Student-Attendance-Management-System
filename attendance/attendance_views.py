@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.http import Http404
 from django.shortcuts import redirect, render
 from .alert_services import refresh_section_alerts
 
@@ -14,7 +15,10 @@ from .models import AttendanceRecord
 
 @login_required
 def mark_attendance(request, session_id):
-    session = get_markable_session(request.user, session_id)
+    try:
+        session = get_markable_session(request.user, session_id)
+    except ValidationError:
+        raise Http404("Attendance session does not exist.")
 
     enrollments = list(get_session_students(session))
 
