@@ -11,11 +11,11 @@
 | Item | Result |
 |---|---|
 | Existing tests before this work | 180 tests, all passing |
-| New tests added | 81 (33 in `attendance/test_role_permissions.py`, 48 in `attendance/test_role_data_protection.py`) |
+| New tests added | 115 (33 in `attendance/test_role_permissions.py`, 48 in `attendance/test_role_data_protection.py`, 34 in `attendance/test_role_new_features.py`) |
 | First run of the new tests | 41 of 48 passed, 7 failed (9 failures counting subtests). All 7 were in `SuspectedDefectTests` |
 | Defects found | 5 (D-1 to D-5, with D-3 covering three pages) |
 | Defects fixed | 5 |
-| Final full run | 261 tests, all passing |
+| Final full run | 328 tests after merging `main` (Issues #16, #17, #18), all passing |
 | `python manage.py check` | No issues |
 | `python manage.py makemigrations --check --dry-run` | No changes detected |
 | `git diff --check` | No whitespace errors (only CRLF line-ending warnings) |
@@ -182,13 +182,55 @@ The URLs tested: session records, correction page, mark page, roster, enrollment
 | Records, correction, mark and defaulter pages of another teacher's section | Teacher | 403 | 403 | PASS |
 | All 12 URLs | Admin | 200 | 200 | PASS |
 
+### 4.10 Pages added by Issues #16, #17 and #18 (`test_role_new_features.py`)
+
+| Scenario | Role | Expected | Actual | Result |
+|---|---|---|---|---|
+| Leave staff list and review pages | Anonymous | Redirect to login | Redirect to login | PASS |
+| Leave staff list | Student, no role | 403 | 403 | PASS |
+| Leave staff list contents | Teacher | Only requests of assigned sections | Only those requests | PASS |
+| Leave staff list contents | Admin, Superuser | All requests | All requests | PASS |
+| GET on the review URL | Admin | 405, request unchanged | 405, still pending | PASS |
+| POST a decision | Anonymous | Redirect, request unchanged | Redirect, still pending | PASS |
+| POST a decision | Student, no role | 403, request unchanged | 403, still pending | PASS |
+| POST a decision on another section's request | Unassigned Teacher | Refused, request unchanged | 404, still pending | PASS |
+| POST a decision with an assignment but no Teacher role | Former Teacher | 403, request unchanged | 403, still pending | PASS |
+| POST a decision | Assigned Teacher | Approved, reviewer recorded | Approved, reviewer recorded | PASS |
+| POST a decision | Admin | Rejected, reviewer recorded | Rejected, reviewer recorded | PASS |
+| Change a decision that was already made | Admin | Refused, decision unchanged | Decision unchanged | PASS |
+| Invalid decision values | Teacher | Nothing changes | Still pending | PASS |
+| Submit and my-requests pages | Anonymous | Redirect to login | Redirect to login | PASS |
+| Submit and my-requests pages | Teacher, Admin, Superuser, no role | 403 | 403 | PASS |
+| Submit and my-requests pages | Student | 200 | 200 | PASS |
+| My requests contents | Student | Only own requests | Only own requests | PASS |
+| POST a new leave request | Teacher, Admin, Superuser, no role | 403, nothing created | 403, nothing created | PASS |
+| POST a request naming another student, status APPROVED and a reviewer | Student | Saved as own request, pending, no reviewer | Saved as own request, pending, no reviewer | PASS |
+| POST a request for a section not enrolled in | Student | Refused, nothing created | Form error, nothing created | PASS |
+| POST a request starting in the past | Student | Refused, nothing created | Form error, nothing created | PASS |
+| Report form and export | Anonymous | Redirect to login | Redirect to login | PASS |
+| Export any section | Student, another Student, no role | 403 | 403 | PASS |
+| Section list on the report form | Student | Empty | Empty | PASS |
+| Export with an assignment but no Teacher role | Former Teacher | 403 | 403 | PASS |
+| Export own and another section | Teacher | Own section CSV, other section 403, no other students in the CSV | As expected | PASS |
+| Export any section | Admin, Superuser | 200 | 200 | PASS |
+| Export an unknown section | Admin | 403 | 403 | PASS |
+| Student name starting with an equals sign | Admin | Written with a leading apostrophe | Written with a leading apostrophe | PASS |
+| Alerts page | Anonymous | Redirect to login | Redirect to login | PASS |
+| Alerts page | No role | 403 | 403 | PASS |
+| Alerts contents | Student | Only own alert | Only own alert | PASS |
+| Alerts contents | Teacher | Only alerts of assigned sections | Only those alerts | PASS |
+| Alerts contents | Admin, Superuser | All alerts | All alerts | PASS |
+| Inactive alerts | Student | Not shown | Not shown | PASS |
+
+No defects were found in these pages.
+
 ## 5. Not covered by these tests
 
 | Area | Reason |
 |---|---|
-| Student view of their own attendance (SRS 2.3, SAMS-F-011) | No such page exists yet. `/dashboard/student/` only returns the text "Student Dashboard". The tests confirm students are refused on every other student-data URL |
-| Leave requests (Issue #18, SAMS-F-015) | Not merged yet (PR #43). Permission tests should be added after the merge, in particular "unauthorized users cannot change request decisions" |
-| Report export (SAMS-F-013) and low-attendance alerts (SAMS-F-014) | No URLs exist in the project |
+| Contents of the Student and Teacher dashboards (changed by Issues #17 and #18) | Only access to the dashboards is tested, not what they display. Alerts and leave requests, which show a Student only their own data, are tested in section 4.10 |
+| Wording and content of messages and templates | Tests check status codes, redirects, database changes and the data shown, not the page text |
+| Report export options other than the section | Only section access and the CSV content for a section are tested, not date ranges |
 | Django admin site (`/admin/`) and Django's built-in login, logout and password pages (`/accounts/`) | Built-in Django features, not part of the SAMS code |
 | Live session expiry | D-5 is checked through the setting (`SESSION_COOKIE_AGE`), not by waiting 30 minutes |
 
@@ -200,12 +242,18 @@ The URLs tested: session records, correction page, mark page, roster, enrollment
 4. **404 versus 403.** An unknown ID gives a 404 and an existing but forbidden ID gives a 403, so a logged-in user can tell which IDs exist. This is normal Django behaviour and low risk.
 5. **The enrollment history page now filters by section.** A Teacher sees only the enrollment rows from sections they teach. If a student was transferred out of the Teacher's section, the Teacher no longer sees the rows from the other section.
 
+6. **Admins can also approve or reject leave requests.** SRS SAMS-F-015 says only the assigned Teacher can. The code allows any Admin as well.
+7. **Admins and superusers get a 403 on the student leave pages.** Leave requests are a Student feature, so an Admin cannot submit one on a student's behalf.
+8. **The report filter page opens for every logged-in user.** A Student sees an empty section list and every export is refused, so nothing sensitive is shown.
+9. **Order of checks on the leave review page.** The decision value is checked before the permission, so a Student who sends an invalid decision gets a redirect and a message instead of a 403. Nothing is changed either way.
+
 ## 7. Files changed for Issue #19
 
 | File | Change |
 |---|---|
 | `attendance/test_role_permissions.py` | New: 33 tests (accounts, dashboards, teacher assignments, defaulter reports) |
 | `attendance/test_role_data_protection.py` | New: 48 tests (login, attendance, corrections, enrollment, student-data protection, defect checks) |
+| `attendance/test_role_new_features.py` | New: 34 tests (leave requests, report export, alerts from Issues #16, #17, #18) |
 | `attendance/attendance_views.py` | Fix D-1 |
 | `attendance/correction_views.py` | Fix D-2 |
 | `attendance/enrollment_views.py` | Fix D-3 |
@@ -216,7 +264,7 @@ The URLs tested: session records, correction page, mark page, roster, enrollment
 
 ## 8. How to re-run
 
-    python manage.py test attendance.test_role_permissions attendance.test_role_data_protection
+    python manage.py test attendance.test_role_permissions attendance.test_role_data_protection attendance.test_role_new_features
     python manage.py test
     python manage.py check
     python manage.py makemigrations --check --dry-run
