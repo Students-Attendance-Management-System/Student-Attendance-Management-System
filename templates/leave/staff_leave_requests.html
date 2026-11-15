@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Review Leave Requests - SAMS</title>
+</head>
+<body>
+    <h1>Leave Request Management</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    {% if leave_requests %}
+        <table border="1" cellpadding="8">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Section</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Decision Details</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for request in leave_requests %}
+                    <tr>
+                        <td>{{ request.student.username }}</td>
+                        <td>{{ request.section }}</td>
+                        <td>{{ request.start_date }}</td>
+                        <td>{{ request.end_date }}</td>
+                        <td>{{ request.reason }}</td>
+                        <td>{{ request.get_status_display }}</td>
+
+                        <td>
+                            {% if request.reviewed_by %}
+                                Reviewed by: {{ request.reviewed_by.username }}
+                                <br>
+                                At: {{ request.reviewed_at }}
+                            {% else %}
+                                Not reviewed
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if request.status == "PENDING" %}
+                                <form method="post"
+                                      action="{% url 'attendance:review_leave_request' request.pk %}">
+                                    {% csrf_token %}
+
+                                    <button type="submit"
+                                            name="action"
+                                            value="APPROVED">
+                                        Approve
+                                    </button>
+
+                                    <button type="submit"
+                                            name="action"
+                                            value="REJECTED">
+                                        Reject
+                                    </button>
+                                </form>
+                            {% else %}
+                                Decision completed
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No leave requests available for review.</p>
+    {% endif %}
+
+    <p>
+        <a href="{% url 'attendance:dashboard' %}">
+            Back to Dashboard
+        </a>
+    </p>
+</body>
+</html>

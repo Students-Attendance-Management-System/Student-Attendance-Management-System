@@ -13,6 +13,17 @@
             View My Attendance Alerts
         </a>
     </p>
+    <p>
+    <a href="{% url 'attendance:submit_leave_request' %}">
+        Submit Leave Request
+    </a>
+</p>
+
+<p>
+    <a href="{% url 'attendance:my_leave_requests' %}">
+        View My Leave Requests
+    </a>
+</p>
 
     <p><a href="{% url 'logout' %}">Log out</a></p>
 </body>
