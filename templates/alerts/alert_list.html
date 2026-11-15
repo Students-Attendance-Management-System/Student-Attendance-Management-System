@@ -1,0 +1,46 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAMS - Attendance Alerts</title>
+</head>
+<body>
+    <h1>SAMS</h1>
+    <h2>Attendance Alerts</h2>
+
+    <p><a href="{% url 'attendance:dashboard' %}">Back to Dashboard</a></p>
+
+    {% if alerts %}
+        {% for alert in alerts %}
+            <div>
+                <h3>Low Attendance Alert</h3>
+
+                {% if not is_student %}
+                    <p>Student: {{ alert.student.username }}</p>
+                {% endif %}
+
+                <p>
+                    Section: {{ alert.section.course.code }} -
+                    {{ alert.section.name }}
+                </p>
+
+                <p>
+                    Attendance: {{ alert.attendance_percentage }}%
+                </p>
+
+                <p>
+                    Required Attendance: {{ alert.threshold }}%
+                </p>
+
+                <p>
+                    Your attendance is below the required threshold.
+                </p>
+                <hr>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No active low-attendance alerts.</p>
+    {% endif %}
+</body>
+</html>

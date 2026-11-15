@@ -1,4 +1,3 @@
-
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -18,12 +17,17 @@ from .permissions import (
 )
 
 
-def calculate_attendance_percentage(student, section):
+def calculate_attendance_percentage(
+    student, section, start_date=None, end_date=None
+):
     """
     Calculate a student's attendance percentage in a section.
 
     Only valid attendance records from sessions within the
     student's enrollment periods are included.
+
+    start_date and end_date (both optional) limit which session
+    dates are counted.
 
     PRESENT and LATE count as attended.
     ABSENT counts as not attended.
@@ -41,6 +45,12 @@ def calculate_attendance_percentage(student, section):
         status__in=["PRESENT", "ABSENT", "LATE"],
     ).select_related("session")
 
+    if start_date:
+        records = records.filter(session__date__gte=start_date)
+
+    if end_date:
+        records = records.filter(session__date__lte=end_date)
+
     counts = {
         "present": 0,
         "absent": 0,
@@ -52,17 +62,17 @@ def calculate_attendance_percentage(student, section):
         applicable = False
 
         for enrollment in enrollments:
-            start_date = timezone.localtime(enrollment.enrolled_at).date()
-            end_date = (
+            enrolled_date = timezone.localtime(enrollment.enrolled_at).date()
+            ended_date = (
                 timezone.localtime(enrollment.ended_at).date()
                 if enrollment.ended_at
                 else None
             )
 
-            if session_date < start_date:
+            if session_date < enrolled_date:
                 continue
 
-            if end_date is not None and session_date > end_date:
+            if ended_date is not None and session_date > ended_date:
                 continue
 
             applicable = True

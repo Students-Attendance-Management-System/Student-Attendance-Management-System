@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Export Attendance Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; }
+    p { margin: 14px 0; }
+    label { display: block; font-weight: bold; margin-bottom: 4px; }
+    select, input { padding: 6px; width: 100%; box-sizing: border-box; }
+    button { padding: 8px 18px; cursor: pointer; }
+    .errorlist { color: #b00020; padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <h2>Export attendance report</h2>
+
+  <form method="get" action="{% url 'attendance:export_report' %}">
+    {{ form.as_p }}
+    <button type="submit">Export CSV</button>
+  </form>
+
+  <p><a href="{% url 'attendance:dashboard' %}">Back to dashboard</a></p>
+</body>
+</html>
