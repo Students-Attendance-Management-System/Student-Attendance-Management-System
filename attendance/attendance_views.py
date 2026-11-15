@@ -47,6 +47,10 @@ def mark_attendance(request, session_id):
                 if status:
                     attendance_data[student.id] = status
 
+        if not attendance_data and all(r["record"] for r in student_rows):
+            messages.info(request, "Attendance for this session was already saved.")
+            return redirect("attendance:mark_attendance", session_id=session_id)
+
         try:
             result = submit_attendance(
                 request.user,

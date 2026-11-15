@@ -78,6 +78,11 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 30,
+            'transaction_mode': 'IMMEDIATE',
+        },
+        'TEST': {'NAME': BASE_DIR / 'test_db.sqlite3'},
     }
 }
 
@@ -138,3 +143,4 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 # Hours after the end of a session's date during which attendance
 # may still be corrected. Change here only.
 ATTENDANCE_CORRECTION_WINDOW_HOURS = 24
+
