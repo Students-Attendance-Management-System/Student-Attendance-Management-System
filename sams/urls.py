@@ -1,8 +1,9 @@
-
 from django.contrib import admin
+from django.shortcuts import redirect
 from django.urls import path, include
 
 urlpatterns = [
+    path('', lambda request: redirect('attendance:dashboard')),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('users/', include('attendance.account_urls')),
