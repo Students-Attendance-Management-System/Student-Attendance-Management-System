@@ -1,9 +1,9 @@
+
 import time
 
 from django.contrib.auth.models import Group, User
 from django.db import connection
 from django.test import TestCase
-from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
@@ -52,12 +52,22 @@ class SubmissionPerformanceTests(TestCase):
             student_count, str(student_count)
         )
         self.client.force_login(teacher)
+
         url = reverse(
             "attendance:mark_attendance", kwargs={"session_id": session.id}
         )
         data = {f"status_{s.id}": "PRESENT" for s in students}
 
-        with CaptureQueriesContext(connection) as ctx:
+        query_count = 0
+
+        def count_queries(execute, sql, params, many, context):
+            nonlocal query_count
+            query_count += 1
+            return execute(sql, params, many, context)
+
+        # Count actual SQL executions. Unlike CaptureQueriesContext,
+        # this is not affected by the test client's query-log reset.
+        with connection.execute_wrapper(count_queries):
             start = time.perf_counter()
             response = self.client.post(url, data)
             first = time.perf_counter() - start
@@ -67,9 +77,10 @@ class SubmissionPerformanceTests(TestCase):
         repeat = time.perf_counter() - start
 
         rows = AttendanceRecord.objects.filter(session=session).count()
+
         print(
             f"\n[{student_count} students] first submit: {first*1000:.0f} ms, "
-            f"{len(ctx)} queries | repeat submit: {repeat*1000:.0f} ms | "
+            f"{query_count} queries | repeat submit: {repeat*1000:.0f} ms | "
             f"rows saved: {rows}"
         )
 

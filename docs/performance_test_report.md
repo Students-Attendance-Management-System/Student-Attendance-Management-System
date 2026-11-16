@@ -1,46 +1,124 @@
-﻿# Attendance Submission Performance and Reliability Report (Issue #20)
+﻿# Attendance Performance, Concurrency and Usability Test Report (Issues #20 and #21)
 
-## Environment
-- Django 6.1.2, SQLite (file database), Windows, Django test client (no network latency)
-- Tests: `attendance/test_performance.py`, `attendance/test_concurrency.py`
-- Run with: `python manage.py test attendance.test_performance attendance.test_concurrency`
+## 1. Objective
 
-## 1. Response time (one teacher submits a whole class)
+Evaluate attendance submission performance, concurrent-user behavior, report generation and usability of the Student Attendance Management System (SAMS).
 
-| Class size | First submit | Repeat submit | Rows saved |
-|---|---|---|---|
-| 30 | 173 ms | 14 ms | 30 |
-| 60 | 323 ms | 19 ms | 60 |
-| 120 | 686 ms | 58 ms | 120 |
-| 200 | 1016 ms | 28 ms | 200 |
+The evaluation covers automated workflow tests, concurrent submissions, report accuracy, performance measurements and documented limitations.
 
-Response time grows linearly, about 5 ms per student, because `submit_attendance` calls
-`get_or_create` once per student. No failures at any size. A repeat submit is fast
-because no new rows are written.
+## 2. Test Environment
 
-## 2. Concurrency and duplicates
+- Framework: Django 6.1.2
+- Database: SQLite (file database)
+- Operating system: Windows
+- Testing method: Django automated test suite and test client
+- Performance tests: `attendance/test_performance.py`
+- Concurrency tests: `attendance/test_concurrency.py`
+- Report tests: `attendance/test_reports.py`
+
+## 3. Attendance Submission Performance
+
+Attendance submission was measured with different class sizes.
+
+| Class size | First submission | Repeat submission | SQL queries | Rows saved |
+|---|---:|---:|---:|---:|
+| 30 students | 77 ms | 7 ms | 208 | 30 |
+| 60 students | 153 ms | 9 ms | 388 | 60 |
+| 120 students | 310 ms | 12 ms | 748 | 120 |
+| 200 students | 500 ms | 17 ms | 1,228 | 200 |
+
+### Observations
+
+- All four performance tests passed.
+- All expected attendance records were saved.
+- Submission time increased with class size.
+- Repeat submissions were faster because existing records were not duplicated.
+- SQL query count increased with the number of students.
+
+## 4. Concurrent-User Testing
+
+Three concurrency scenarios were tested.
 
 | Scenario | Result |
 |---|---|
-| 5 simultaneous submits of the same session (all PRESENT) | All 302, 30/30 rows, no duplicates |
-| 5 simultaneous submits of the same session (all ABSENT, exercises alert creation) | All 302, 30/30 rows, 30 alerts (one per student) |
-| 8 teachers submitting 8 different sessions at once | All 302, 30 rows in each session |
+| Five simultaneous submissions for the same session (all PRESENT) | All 5 returned HTTP 302; exactly 30 records saved |
+| Five simultaneous submissions for the same session (all ABSENT) | All 5 returned HTTP 302; 30 records and 30 alerts created |
+| Eight teachers submitting eight different sessions simultaneously | All 8 returned HTTP 302; 30 records saved per session |
 
-Duplicate prevention works: the `unique_student_attendance_per_session` constraint plus
-`get_or_create` inside `transaction.atomic` never produced a duplicate or lost record.
+### Observations
 
-## 3. Defects
+- No duplicate attendance records were created.
+- Simultaneous submissions completed successfully.
+- Alert creation produced one alert per absent student.
+- The database uniqueness constraint and transactional submission handling prevented duplicate records.
+
+## 5. Attendance Report Testing
+
+A total of 18 report tests passed.
+
+The tests covered:
+
+- CSV export contents and correctness.
+- Date filtering.
+- Access permissions.
+- Formula-injection sanitization.
+- Report form validation.
+- Handling of reports with no attendance records.
+
+### Observations
+
+Generated report contents and export behavior passed the automated checks. Permission restrictions and input sanitization were also verified.
+
+## 6. Usability Evaluation
+
+Manual browser-based usability testing was not performed.
+
+The automated tests verified important workflow behavior, response handling and access restrictions. However, visual clarity, navigation convenience and ease of use were not evaluated through manual interaction.
+
+This remains a limitation of the evaluation.
+
+## 7. Defects Identified and Resolved
 
 | # | Defect | Severity | Status |
 |---|---|---|---|
-| 1 | With default SQLite settings, concurrent submits failed with `database is locked` (HTTP 500). 7 of 8 teachers saved 0 rows. Cause: `atomic` starts a read transaction, and SQLite refuses the upgrade to a write instantly instead of waiting. | High | Fixed in `sams/settings.py` (`timeout: 30`, `transaction_mode: IMMEDIATE`). Retested: all submits succeed. |
-| 2 | Repeating a submit that had already succeeded showed the error "No attendance data was submitted". No duplicates were created. | Low (UX) | Fixed in `attendance_views.py`: if every student already has a record, show an info message and redirect. Retested. |
+| 1 | Concurrent submissions failed with `database is locked` under default SQLite settings. | High | Fixed using SQLite timeout of 30 seconds and `transaction_mode: IMMEDIATE` in `sams/settings.py`. Retested successfully. |
+| 2 | Repeating a successful attendance submission displayed the message "No attendance data was submitted". | Low (UX) | Fixed in `attendance_views.py` by displaying an informational message when all records already exist. Retested successfully. |
 
-## 4. Limitations
-- All results are from SQLite. Under MySQL or PostgreSQL, locking behaves differently and the
-  concurrency tests should be rerun. The alert race (`refresh_section_alerts`) in particular
-  is only verified on SQLite.
-- Load comes from the Django test client on one machine, so network latency and real browser
-  behavior are not measured.
-- SQLite allows one writer at a time. Many teachers submitting in the same instant queue up,
-  which is acceptable at this scale but would not scale to a large institution.
+No failures were observed in the final automated test run.
+
+## 8. Full Automated Test Results
+
+Commands executed:
+
+```powershell
+python manage.py check
+python manage.py test attendance -v 2
+```
+
+Results:
+
+- Django system check: No issues identified.
+- Total automated tests: 335.
+- Tests passed: 335.
+- Tests failed: 0.
+- Total execution time: 196.312 seconds.
+
+The full test suite included attendance workflows, permissions, security, concurrency, performance and report tests.
+
+## 9. Limitations
+
+- Manual UI usability testing was not performed.
+- Performance measurements were obtained using the Django test client on one machine; network latency and real browser behavior were not measured.
+- Results are based on SQLite. Concurrency behavior should be tested again if the application moves to MySQL or PostgreSQL.
+- SQLite permits only one writer at a time, which may limit scalability under heavier concurrent workloads.
+- Performance measurements are local test observations, not production load-test results.
+
+## 10. Conclusion
+
+The automated evaluation of SAMS was successful. All 335 automated tests passed, including performance, concurrency and report-generation tests.
+
+Attendance submissions worked correctly for class sizes up to 200 students in the tested environment. Concurrent submissions did not produce duplicate records, and report export and validation checks passed.
+
+The previously identified concurrency and repeat-submission issues were resolved and retested.
+
+Manual UI usability evaluation remains outstanding and should be performed in a future testing cycle.
